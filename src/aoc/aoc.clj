@@ -38,7 +38,9 @@
                                   h    (constantly 1)}}]
   (fn go
     ([nodes] (go (assoc-in nodes [start :g] 0)
-                 (assoc (pm/priority-map-by (fn [a b] (- (:f b) (:f a))))
+                 (assoc (pm/priority-map-by
+                         (fn [a b] {:pre [(not (nil? (:f a))) (not (nil? (:f b)))]}
+                            (- (:f a) (:f b))))
                         start
                         (get nodes start))
                  #{}))
@@ -47,23 +49,23 @@
        (if (= curr end)
         {:node curr, :state nodes}
         (let [border (set/difference (set (get-in nodes [curr :border] #{})) closed)
-              nodes'
-              (reduce (fn [state nxt]
-                        (let [g      (get-in state [curr :g])
-                              h'     (h nxt end)
-                              f      (+ g h')
-                              c      (+ g (cost curr nxt))
-                              new    (not (contains? open nxt))
-                              better (< f (get-in state [nxt :g] Float/POSITIVE_INFINITY))
-                              nxt'   (if (or better new)
-                                       (assoc (get state nxt)
-                                              :g c
-                                              :from curr)
-                                       (get state nxt))]
-                          (assoc state nxt nxt')))
-                      nodes
-                      border)
-              open' (into (pop open) (map (fn [k] [k (get nodes k)]) border))]
+              nodes' (reduce (fn [state nxt]
+                               (let [g      (get-in state [curr :g])
+                                     g'     (+ g (cost curr nxt))
+                                     h'     (h nxt end)
+                                     f      (+ g h')
+                                     better (< f (get-in state [nxt :g] Float/POSITIVE_INFINITY))
+                                     new    (not (contains? open curr))
+                                     nxt'   (assoc (get state nxt)
+                                                   :f f
+                                                   :g g'
+                                                   :from curr)]
+                                 (if (or new better)
+                                   (assoc state nxt nxt')
+                                   state)))
+                             nodes
+                             border)
+              open'  (into (pop open) (map (fn [k] [k (get nodes k)]) border))]
           (recur nodes' open' (conj closed curr))))
        :no-path-found))))
 
@@ -83,5 +85,5 @@
                [1 2] {:border [[1 1] [0 2]]  :f 0}}
         manhattan (fn [a b] (->> (map - a b) (map #(Math/abs %)) (apply +)))
         find-path (a* {:h manhattan, :cost (constantly 1), :start [0 0], :end [1 2]})]
-    (pprint (find-path nodes))
+    ;; (pprint (find-path nodes))
     (a*-backtrack (find-path nodes))))

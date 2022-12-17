@@ -1,4 +1,7 @@
 {:paths ["src"]
- :deps  {}
+ :deps  {
+         rhizome/rhizome {:mvn/version "0.2.9"}
+         fast-zip/fast-zip {:mvn/version "0.7.0"}
+         quil/quil {:mvn/version "4.0.0-SNAPSHOT-1"}}
  :aliases 
  {:neil {:project {:name aoc/aoc}}}}
